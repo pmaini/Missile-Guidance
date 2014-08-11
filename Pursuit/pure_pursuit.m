@@ -43,23 +43,28 @@ hold on;
 f1 = subplot(2,3,1);
 l1 = plot(0,0,'*');
 
+flag = 0;
+
 for t = 0:delT:50
 
     xt = xt + Vt_hor*delT;
     yt = yt + Vt_ver*delT;
     
     del_R = (Vt*cos(alphaT_rad - theta_rad) - ...
-            Vm*cos(alphaM_rad - theta_rad));
+            Vm*cos( delta_rad));%alphaM_rad - theta_rad +
     R2 = R + del_R * delT; 
 %     R2 = sqrt((yt-ym)^2 + (xt-xm)^2);
     
     if abs(R2) > abs(R)
+        flag = flag+1;
+    end
+    if flag == 2 
         break;
     end
     
     R = R2;
     del_theta_rad = (Vt*sin(alphaT_rad - theta_rad) - ...
-                    Vm*sin(alphaM_rad - theta_rad))/R;
+                    Vm*sin(delta_rad))/R;%alphaM_rad - theta_rad + 
     theta_rad = theta_rad + del_theta_rad * delT; % atan3((yt-ym),(xt-xm));
     alphaM_rad = theta_rad + delta_rad;
     
@@ -145,16 +150,17 @@ for t = 0:delT:50
 end
 
 filename = 'ppIA0_9';
+mkdir(['newData\' filename]);
 for i = 1:imgframe-1
 [im, map] = frame2im(images1(i));
-name = [filename '_plot' num2str(i) '.jpg'];
+name = ['newData\' filename '\' filename '_plot' num2str(i) '.jpg'];
 imwrite(im,name,'jpg');
 end
 
-save(filename);
-movie2avi(images1,[filename '.avi'],'fps',4);
-movie2avi(images1,[filename '_medium.avi'],'fps',5);
-movie2avi(images1,[filename '_small.avi'],'fps',6);
+save(['newData\' filename '\' filename]);
+movie2avi(images1,['newData\' filename '\' filename '.avi'],'fps',4);
+movie2avi(images1,['newData\' filename '\' filename '_medium.avi'],'fps',5);
+movie2avi(images1,['newData\' filename '\' filename '_small.avi'],'fps',6);
 % movie2avi(images1,[filename '_ffds.avi'],'Compression','FFDS','fps',4);
 
 %{
