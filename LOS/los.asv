@@ -1,0 +1,98 @@
+close all;
+clear all;
+V_t = 200;
+alpha_t = 170;
+xt0 = 10000;
+yt0 = 800;
+a_t = 3*9.8;
+a_t_hor = a_t*cos(pi/2);
+a_t_ver = a_t*sin
+
+xm0 = 0;
+ym0 = 0;
+
+maxTime = 100;
+delTime = 0.1;
+
+alpha_t_rad = alpha_t*(pi/180);
+V_t_hor = V_t * cos(alpha_t_rad);
+V_t_ver = V_t * sin(alpha_t_rad);
+xt = xt0;
+yt = yt0;
+theta_t_rad = atan2(yt,xt);
+theta_t = theta_t_rad * (180/pi);
+Rt = norm([xt yt],2);
+
+V_m = V_t/0.6;
+xm = xm0;
+ym = ym0;
+theta_m_rad = atan2(ym,xm);
+theta_m = theta_m_rad * (180/pi);
+alpha_m_rad = atan2(yt-ym,xt-xm);
+alpha_m = alpha_m_rad * (180/pi);
+V_m_hor = V_m*cos(alpha_m_rad);
+V_m_ver = V_m*sin(alpha_m_rad);
+Rm = norm([xm ym],2);
+
+K_p =  5;
+
+f1 = figure(1);
+set(f1,'WindowStyle','docked');
+hold on;    
+plot(xt,yt,'*r');
+plot(xm,ym,'+g');
+p1 = plot([0,xm,xt],[0,ym,yt],'b');
+
+for time = 1:delTime:maxTime
+    xt2 = xt + V_t_hor * delTime +  + (1/2)*a_t_hor*(delTime^2);
+    yt2 = yt + (V_t_ver * delTime) + (1/2)*a_t_ver*(delTime^2);
+    
+    alpha_t_rad = atan3((yt2-yt),(xt2-xt));
+    alpha_t = alpha_t_rad*(180/pi);
+    V_t_hor = V_t*cos(alpha_t_rad);
+    V_t_ver = V_t*sin(alpha_t_rad);
+    
+    Rt = norm([xt yt],2);
+    theta_t_rad = atan2(yt,xt);
+    theta_t = theta_t_rad * (180/pi);
+    
+    a_m = K_p * Rm * (theta_t_rad - theta_m_rad);
+    a_m_hor = a_m*cos(pi/2 +alpha_m_rad);%+ve x-axis
+    a_m_ver = a_m*sin(pi/2 +alpha_m_rad);%+ve y-axis    
+        
+%     f2 = figure(2);
+%     set(f2,'WindowStyle','docked');
+%     hold on;
+%     plot(time,Rm * (theta_t_rad - theta_m_rad),'*b');
+    
+    xm2 = xm + V_m_hor*delTime + (1/2)*a_m_hor*(delTime^2);
+    ym2 = ym + V_m_ver*delTime + (1/2)*a_m_ver*(delTime^2);
+    
+    alpha_m_rad = atan2(ym2-ym,xm2-xm);
+    alpha_m = alpha_m_rad * (180/pi);
+    
+    xm = xm2;
+    ym = ym2;
+    
+    Rm = norm([xm ym],2);
+    theta_m_rad = atan3(ym,xm);
+    theta_m = theta_m_rad * (180/pi);
+    V_m_hor = V_m*cos(alpha_m_rad);
+    V_m_ver = V_m*sin(alpha_m_rad);
+    R = norm([(xt-xm) (yt-ym)],2);
+    
+    f1 = figure(1);
+    set(f1,'WindowStyle','docked');
+    hold on;    
+    delete(p1);
+    plot(xt,yt,'*r');
+    plot(xm,ym,'+g');
+    p1 = plot([0,xm,xt],[0,ym,yt],'b');
+    
+    
+%     f2 = figure(2);
+%     set(f2,'WindowStyle','docked');
+%     hold on;
+%     plot(xm,ym,'+g');
+    
+end
