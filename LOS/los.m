@@ -1,5 +1,6 @@
 close all;
 clear all;
+
 Vt = 200;
 alphaT = 170;
 xt0 = 10000;
@@ -33,8 +34,8 @@ alphaM = alphaM_rad * (180/pi);
 Vm_hor = Vm*cos(alphaM_rad);
 Vm_ver = Vm*sin(alphaM_rad);
 Rm = norm([xm ym],2);
-
-K_p = 10;
+R = norm([(xt-xm) (yt-ym)],2);
+K_p = 5;
 
 figHandle = figure(1);
 set(figHandle,'WindowStyle','docked');
@@ -42,9 +43,10 @@ f1 = subplot(1,3,1);
 l1 = plot([0,xm,xt],[0,ym,yt],'b');
 imgframe =0;
 
+flag = 0;
 
 for t = 1:delT:maxTime
-    xt = xt + (Vt_hor * delT);% +  + (1/2)*a_t_hor*(delT^2);
+    xt = xt + (Vt_hor * delT);% + (1/2)*a_t_hor*(delT^2);
     yt = yt + (Vt_ver * delT);% + (1/2)*a_t_ver*(delT^2);
     
 %     alphaT_rad = atan3((yt2-yt),(xt2-xt));
@@ -54,7 +56,9 @@ for t = 1:delT:maxTime
 %     Vt_hor = Vt_hor+ (a_t_hor*delT);
 %     Vt_ver = Vt_ver + (a_t_ver*delT);
     
-    Rt = norm([xt yt],2);
+    del_Rt = Vt*cos(alphaT_rad - thetaT_rad);
+    Rt = Rt + del_Rt*delT;
+%     Rt = norm([xt yt],2);
     del_thetaT_rad = (Vt*sin(alphaT_rad - thetaT_rad))/Rt;
     thetaT_rad = thetaT_rad + del_thetaT_rad * delT;
 %     thetaT_rad = atan3(yt,xt);
@@ -69,11 +73,6 @@ for t = 1:delT:maxTime
     
     Vm_hor = Vm*cos(alphaM_rad);
     Vm_ver = Vm*sin(alphaM_rad);
-        
-%     f2 = figure(2);
-%     set(f2,'WindowStyle','docked');
-%     hold on;
-%     plot(time,Rm * (thetaT_rad - thetaM_rad),'*b');
     
     xm = xm + Vm_hor*delT;% + (1/2)*a_m_hor*(delT^2);
     ym = ym + Vm_ver*delT;% + (1/2)*a_m_ver*(delT^2);
@@ -81,11 +80,24 @@ for t = 1:delT:maxTime
 %     xm = xm2;
 %     ym = ym2;
     
-    Rm = norm([xm ym],2);
+    del_Rm = Vm*cos(alphaM_rad - thetaM_rad);
+    Rm = Rm + del_Rm*delT;
+%     Rm = norm([xm ym],2);
     del_thetaM_rad = (Vm*sin(alphaM_rad - thetaM_rad))/Rm;
     thetaM_rad = thetaM_rad + del_thetaM_rad*delT; %atan3(ym,xm);
     thetaM = thetaM_rad * (180/pi);
-    R = norm([(xt-xm) (yt-ym)],2);
+    del_R = Vt*cos(alphaT_rad - thetaT_rad) - Vm*cos(alphaM_rad - thetaM_rad);
+    R2 = R + del_R * delT;
+%     R = norm([(xt-xm) (yt-ym)],2);
+        
+    if abs(R2) > abs(R)
+        flag = flag+1;
+    end
+    if flag > 2 
+        break;
+    end
+    
+    R = R2;
 
 %     if t == 1
     pause(0.1);
@@ -125,16 +137,17 @@ for t = 1:delT:maxTime
     images1(imgframe) = getframe(figHandle);
 
 end
-% 
-% for i = 1:imgframe-1
-% [im, map] = frame2im(images1(i));
-% name = ['los_k10_plot',num2str(i),'.jpg'];
-% imwrite(im,name,'jpg');
-% end
-% 
-% filename = 'los_k10';
-% save(filename);
-% movie2avi(images1,[filename '.avi'],'fps',4);
-% movie2avi(images1,[filename '_medium.avi'],'fps',5);
-% movie2avi(images1,[filename '_small.avi'],'fps',6);
-% % movie2avi(images1,[filename '_ffds.avi'],'Compression','FFDS','fps',4);
+
+filename = 'los_k5';
+mkdir(['newData\' filename]);
+for i = 1:imgframe-1
+[im, map] = frame2im(images1(i));
+name = ['newData\' filename '\' filename '_plot' num2str(i) '.jpg'];
+imwrite(im,name,'jpg');
+end
+
+save(['newData\' filename '\' filename]);
+movie2avi(images1,['newData\' filename '\' filename '.avi'],'fps',4);
+movie2avi(images1,['newData\' filename '\' filename '_medium.avi'],'fps',5);
+movie2avi(images1,['newData\' filename '\' filename '_small.avi'],'fps',6);
+% movie2avi(images1,[filename '_ffds.avi'],'Compression','FFDS','fps',4);
