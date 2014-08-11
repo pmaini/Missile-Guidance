@@ -14,7 +14,7 @@ yt0 = R0*sin(theta0_rad);
 Vt_hor = Vt*cos(alphaT_rad);
 Vt_ver = Vt*sin(alphaT_rad);
 
-Mu = 2.1;
+Mu = 0.9;
 Vm = Mu*Vt;
 
 xm0 = 0;
@@ -29,12 +29,13 @@ alphaM = alphaM_rad*(180/pi);
 Vm_hor = Vm*cos(alphaM_rad);
 Vm_ver = Vm*sin(alphaM_rad);
 
+R = R0;
 theta_rad = theta0_rad;
 del_theta_rad = 0;
 del_theta = del_theta_rad*(180/pi);
-delta = 0;
+delta = 10;
 delta_rad = delta*(pi/180);
-Ka = 1;
+Ka = 10;
 delT = 0.1;
 
 imgframe = 0;
@@ -44,19 +45,34 @@ hold on;
 f1 = subplot(2,3,1);
 l1 = plot(0,0,'*');
 
-for t = 0:delT:100
+flag = 0;
 
-    R = sqrt((yt-ym)^2 + (xt-xm)^2);
+for t = 0:delT:100
     
-    theta_rad = theta_rad + del_theta_rad*delT;%atan3((yt-ym),(xt-xm));
-    theta = theta_rad*(180/pi);
+    del_R = (Vt*cos(alphaT_rad - theta_rad) - ...
+            Vm*cos(delta_rad));
+    R2 = R + del_R * delT; 
+%     R2 = sqrt((yt-ym)^2 + (xt-xm)^2);
+    
+    if abs(R2) > abs(R)
+        flag = flag+1;
+    end
+    if flag > 2 
+        break;
+    end
+    
+    R = R2;
     del_theta_rad = (Vt*sin(alphaT_rad - theta_rad)-Vm*sin(delta_rad))/R;
 %     del_theta_rad = (theta2_rad - theta_rad)/delT;%rad/sec
     del_theta = del_theta_rad*(180/pi);
+    
+    theta_rad = theta_rad + del_theta_rad*delT;
+%     atan3((yt-ym),(xt-xm));
+    theta = theta_rad*(180/pi);
 %     theta_rad = theta2_rad;
 %     theta = theta_rad*(180/pi);    
 
-    a_m = (Vm*del_theta_rad) - (Ka*(alphaM_rad-theta_rad));    
+    a_m = (Vm*del_theta_rad) - (Ka*(alphaM_rad-theta_rad-delta));    
 %     a_m_hor = a_m*cos(((pi/2)+alphaM_rad));%+ve x axis
 %     a_m_ver = a_m*sin(((pi/2)+alphaM_rad));%+ve y axis
             
@@ -98,20 +114,20 @@ for t = 0:delT:100
     f2 = subplot(2,3,2);
     box on;
     hold on;
-    plot(t,del_theta_rad,'*b');
+    plot(t,R,'*b');
     xlabel('Time');
-    ylabel('del_theta_rad');%LOS Distance (meters)');
+    ylabel('LOS Distance (meters)');%('del_theta_rad');%
     
 %     f3 = figure(3);
 %     set(f3,'WindowStyle','docked');
     f3 = subplot(2,3,3);
     box on;
     hold on;
-    plot(t,(alphaM_rad-theta_rad),'+b');%alphaM_rad,
-    plot(t,(alphaM_rad),'+r');
-    plot(t,(theta_rad),'+g');
+%     plot(t,(alphaM_rad-theta_rad),'+b');%alphaM_rad,
+%     plot(t,(alphaM_rad),'+r');
+    plot(t,(theta),'+g');
     xlabel('Time');
-    ylabel('(alphaM_rad-theta_rad)');%theta (degrees)');
+    ylabel('theta (degrees)');%('(alphaM_rad-theta_rad)');%
      
 %     f4 = figure(4);
 %     set(f4,'WindowStyle','docked');   
@@ -146,16 +162,16 @@ for t = 0:delT:100
     
 end
 
-% for i = 1:imgframe-1
-% [im, map] = frame2im(images1(i));
-% name = ['plot',num2str(i),'.jpg'];
-% imwrite(im,name,'jpg');
-% end
-% 
-% filename = 'ppCL0_9K1';
-% save(filename);
-% movie2avi(images1,[filename '.avi'],'fps',4);
-% movie2avi(images1,[filename '_medium.avi'],'fps',5);
-% movie2avi(images1,[filename '_small.avi'],'fps',6);
-% movie2avi(images1,[filename '_ffds.avi'],'Compression','FFDS','fps',4);
+filename = 'dp10CL0_9K10';
+mkdir(['newData\' filename]);
+for i = 1:imgframe-1
+[im, map] = frame2im(images1(i));
+name = ['newData\' filename '\' filename '_plot' num2str(i) '.jpg'];
+imwrite(im,name,'jpg');
+end
 
+save(['newData\' filename '\' filename]);
+movie2avi(images1,['newData\' filename '\' filename '.avi'],'fps',4);
+movie2avi(images1,['newData\' filename '\' filename '_medium.avi'],'fps',5);
+movie2avi(images1,['newData\' filename '\' filename '_small.avi'],'fps',6);
+% movie2avi(images1,[filename '_ffds.avi'],'Compression','FFDS','fps',4);
