@@ -14,7 +14,7 @@ yt0 = R0*sin(theta0_rad);
 Vt_hor = Vt*cos(alphaT_rad);
 Vt_ver = Vt*sin(alphaT_rad);
 
-Mu = 2.5;
+Mu = 0.9;
 Vm = Mu*Vt;
 
 xm0 = 0;
@@ -25,11 +25,16 @@ yt = yt0;
 xm = xm0;
 ym = ym0;
 
-delta = 30;
-alphaM_rad = atan2((yt-ym),(xt-xm)) + (delta/180)*pi;
+delta = 0;
+delta_rad = (delta*(pi/180));
+alphaM_rad = atan3((yt-ym),(xt-xm)) + (delta/180)*pi;
 Vm_hor = Vm*cos(alphaM_rad);
 Vm_ver = Vm*sin(alphaM_rad);
-delTime = 1;
+delT = 0.1;
+K = R0*(((1+cos(alphaT_rad - theta0_rad))^Mu)/...
+    ((sin(alphaT_rad - theta0_rad))^(Mu-1)));
+theta_rad = theta0_rad;
+R = R0;
 
 imgframe = 0;
 figHandle = figure;
@@ -38,31 +43,41 @@ hold on;
 f1 = subplot(2,3,1);
 l1 = plot(0,0,'*');
 
-for t = 0:delTime:50
+for t = 0:delT:50
 
-    xt = xt + Vt_hor*delTime;
-    yt = yt + Vt_ver*delTime;
+    xt = xt + Vt_hor*delT;
+    yt = yt + Vt_ver*delT;
     
-    R = sqrt((yt-ym)^2 + (xt-xm)^2);
+    del_R = (Vt*cos(alphaT_rad - theta_rad) - ...
+            Vm*cos(alphaM_rad - theta_rad));
+    R2 = R + del_R * delT; 
+%     R2 = sqrt((yt-ym)^2 + (xt-xm)^2);
     
-    theta_rad = atan2((yt-ym),(xt-xm));
-    alphaM_rad = theta_rad + (delta*(pi/180));
+    if abs(R2) > abs(R)
+        break;
+    end
     
-    Vm_hor2 = Vm*cos(alphaM_rad);
-    Vm_ver2 = Vm*sin(alphaM_rad);
+    R = R2;
+    del_theta_rad = (Vt*sin(alphaT_rad - theta_rad) - ...
+                    Vm*sin(alphaM_rad - theta_rad))/R;
+    theta_rad = theta_rad + del_theta_rad * delT; % atan3((yt-ym),(xt-xm));
+    alphaM_rad = theta_rad + delta_rad;
     
-    am_hor = (Vm_hor2 - Vm_hor)/delTime;
-    am_ver = (Vm_ver2 - Vm_ver)/delTime;
+    Vm_hor = Vm*cos(alphaM_rad);
+    Vm_ver = Vm*sin(alphaM_rad);    
+    xm = xm + Vm_hor*delT;
+    ym = ym + Vm_ver*delT;
     
-    Vm_hor = Vm_hor2;
-    Vm_ver = Vm_ver2;
+%     am_hor = (Vm_hor2 - Vm_hor)/delT;
+%     am_ver = (Vm_ver2 - Vm_ver)/delT;
+%     Vm_hor = Vm_hor2;
+%     Vm_ver = Vm_ver2;
     
-    am = norm([am_hor am_ver],2);
-    
-    xm = xm + Vm_hor*delTime;
-    ym = ym + Vm_ver*delTime;
+    am = ((Vm*Vt)*((sin(alphaT_rad - theta_rad))^2)...
+        /(K*((tan((alphaT_rad - theta_rad)/2))^Mu))); 
+%     am = norm([am_hor am_ver],2);
 
-%     if t == 1
+%     if t == 4
     pause(0.1);
 %     end
 
@@ -92,7 +107,8 @@ for t = 0:delTime:50
     f3 = subplot(2,3,3);
     box on;
     hold on;
-    plot(t,theta_rad*(180/pi),'+b');%alphaM_rad,
+    plot(t,theta_rad*(180/pi),'+b');
+%     plot(t,alphaT_rad - theta_rad,'*g');%alphaM_rad,
     xlabel('Time');
     ylabel('theta (degrees)');
      
@@ -126,16 +142,15 @@ for t = 0:delTime:50
     
     imgframe = imgframe+1;
     images1(imgframe) = getframe(figHandle);
-
 end
 
+filename = 'ppIA0_9';
 for i = 1:imgframe-1
 [im, map] = frame2im(images1(i));
-name = ['dp30IA2_5_plot',num2str(i),'.jpg'];
+name = [filename '_plot' num2str(i) '.jpg'];
 imwrite(im,name,'jpg');
 end
 
-filename = 'dp30IA1_1';
 save(filename);
 movie2avi(images1,[filename '.avi'],'fps',4);
 movie2avi(images1,[filename '_medium.avi'],'fps',5);
@@ -143,11 +158,9 @@ movie2avi(images1,[filename '_small.avi'],'fps',6);
 % movie2avi(images1,[filename '_ffds.avi'],'Compression','FFDS','fps',4);
 
 %{
-% K = R0*(((1+cos(alphaT_rad - theta0_rad))^Mu)/((sin(alphaT_rad - theta0_rad))^(Mu-1)));
-% 
-% syms theta_sim R t;
-% theta_sim = solve(theta_sim - alphaT_rad - acos((R0*(Vt*cos(alphaT_rad-theta0_rad)+Vm) - ((Vm^2)-(Vt^2))*t)/(R*Vt) - (Vm/Vt)),theta_sim);
-% R = solve(R - K*(((sin(alphaT_rad - theta_sim))^(Mu-1))/((1+cos(alphaT_rad - theta_sim)))^Mu),R);
-% double(theta_sim);
-% % thet
+syms theta_sim R t;
+theta_sim = solve(theta_sim - alphaT_rad - acos((R0*(Vt*cos(alphaT_rad-theta0_rad)+Vm) - ((Vm^2)-(Vt^2))*t)/(R*Vt) - (Vm/Vt)),theta_sim);
+R = solve(R - K*(((sin(alphaT_rad - theta_sim))^(Mu-1))/((1+cos(alphaT_rad - theta_sim)))^Mu),R);
+double(theta_sim);
+% thet
 %}
